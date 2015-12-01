@@ -1,0 +1,6 @@
+Cython
+falcon
+pymongo
+requests
+youtube-dl
+sseclient
