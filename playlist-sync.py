@@ -6,12 +6,12 @@
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from pymongo import ReturnDocument
-from bson.objectid import ObjectId
 import youtube_dl
 from pprint import pprint
 import requests
 import json
 import traceback
+from config import *
 
 ydl_opts = {
     "quiet":True
@@ -51,7 +51,7 @@ def send_sse_event(event_id, event_type, data):
     """ Pushes a event to nginx push stream publish point
     """
     sse_f = "id:{}\nevent:{}\ndata:{}\n\n"
-    r = requests.post("http://localhost/pub?id=event", sse_f.format(event_id, event_type, json.dumps(data)))
+    r = requests.post(NGINX_EVENTS_PUB, sse_f.format(event_id, event_type, json.dumps(data)))
 
 def get_song_updates(playlist_id):
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:

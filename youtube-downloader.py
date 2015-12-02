@@ -76,7 +76,7 @@ executor = ThreadPoolExecutor(max_workers=4)
 
 print("listening for events")
 
-messages = SSEClient('http://localhost/sub/event')
+messages = SSEClient(NGINX_EVENTS_SUB)
 for msg in messages:
     msg.data = json.loads(msg.data)
     print(msg.event, msg.data["title"])
