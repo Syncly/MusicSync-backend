@@ -1,1 +1,4 @@
 venv
+config.py
+__pycache__
+nginx.pid

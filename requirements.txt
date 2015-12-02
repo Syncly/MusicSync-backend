@@ -4,3 +4,4 @@ pymongo
 requests
 youtube-dl
 sseclient
+boto3
