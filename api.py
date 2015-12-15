@@ -14,10 +14,6 @@ from bson.errors import InvalidId
 MusicSync backend http api implementation
 """
 
-class JsonRequest(falcon.Request):
-    pass
-
-
 class BaseResponse():
     """Base resource class"""
     def __init__(self, db):
@@ -79,7 +75,7 @@ class PlaylistResource(BaseResponse):
 class SongsCollection(BaseResponse):
     """Operations on a songs collection in a playlist"""
 
-    def on_get(self, req, resp, playlist_id):
+    def on_get(self, req, resp, playlist_id, extention=".json"):
         """Return list of songs in a playlist"""
         try:
             playlist_id = ObjectId(playlist_id)
@@ -89,7 +85,11 @@ class SongsCollection(BaseResponse):
         for song in songs:
             song["url"] = "http://s3.storage.ms.wut.ee/"+str(song["_id"])
         if songs != None:
-            resp.body = dumps(songs)
+            if extention == ".json":
+                resp.body = dumps(songs)
+            elif extention == ".m3u":
+                resp.body = "\n".join([song["url"] for song in songs])
+                resp.content_type = "audio/mpegurl"
             resp.status = falcon.HTTP_200
         else:
             resp.status = falcon.HTTP_404
@@ -130,6 +130,7 @@ app = falcon.API(middleware=[ReadOnly(True)])
 app.add_route('/playlists/', PlaylistsCollection(db))
 app.add_route('/playlists/{playlist_id}/', PlaylistResource(db))
 app.add_route('/playlists/{playlist_id}/songs/', SongsCollection(db))
+app.add_route('/playlists/{playlist_id}/songs{extention}', SongsCollection(db))
 app.add_route('/playlists/{playlist_id}/songs/{song_id}', SongResource(db))
 
 # a debug server
