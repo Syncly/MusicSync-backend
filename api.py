@@ -120,7 +120,7 @@ class ReadOnly():
         self.readonly = readonly
 
     def process_request(self, req, resp):
-        if readonly and req.method not in self.allowed_methods:
+        if self.readonly and req.method not in self.allowed_methods:
             raise falcon.HTTPMethodNotAllowed(self.allowed_methods)
 
 client = MongoClient()
