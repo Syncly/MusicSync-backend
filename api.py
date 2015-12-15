@@ -14,7 +14,6 @@ from bson.errors import InvalidId
 MusicSync backend http api implementation
 """
 
-
 class JsonRequest(falcon.Request):
     pass
 
@@ -112,11 +111,22 @@ class SongResource(BaseResponse):
         """Delete that song from playlist"""
         resp.status = falcon.HTTP_204
 
+class ReadOnly():
+    """Make everything readonly"""
+
+    allowed_methods = ("GET", "HEAD")
+
+    def __init__(self, readonly=True):
+        self.readonly = readonly
+
+    def process_request(self, req, resp):
+        if readonly and req.method not in self.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.allowed_methods)
 
 client = MongoClient()
 db = client["MusicSync"]
 
-app = falcon.API()
+app = falcon.API(middleware=[ReadOnly(True)])
 app.add_route('/playlists/', PlaylistsCollection(db))
 app.add_route('/playlists/{playlist_id}/', PlaylistResource(db))
 app.add_route('/playlists/{playlist_id}/songs/', SongsCollection(db))
@@ -124,7 +134,7 @@ app.add_route('/playlists/{playlist_id}/songs/{song_id}', SongResource(db))
 
 # a debug server
 if __name__ == '__main__':
-    httpd = simple_server.make_server('127.0.0.1', 8000, app)
+    httpd = simple_server.make_server('0.0.0.0', 8000, app)
     print("Running a dev server at http://{}:{}".format(*httpd.server_address))
     httpd.serve_forever()
 
