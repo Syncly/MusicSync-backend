@@ -14,7 +14,7 @@ import traceback
 from config import *
 
 ydl_opts = {
-    "quiet":True
+    "quiet":False
 }
 
 pl_url = "https://www.youtube.com/playlist?list=PLB5VrND_o3PgZNzNdohFDWE5BTFIPDImQ"
@@ -98,8 +98,8 @@ def get_playlists():
 
 if __name__ == "__main__":
     from time import sleep
-    #send_sse_event(0,"YoutubeSongAdded", {"title":"test", "_id":"FGBhQbmPwH8"})
-    #exit()
+    send_sse_event(0,"YoutubeSongAdded", {"title":"test", "_id":"FGBhQbmPwH8"})
+    exit()
     print("Syncing Youtube")
     while True:
         for playlist in get_playlists():
@@ -107,6 +107,6 @@ if __name__ == "__main__":
                 get_song_updates(playlist["_id"])
             except Exception as e:
                 traceback.print_exc()
-        else:
-            get_song_updates(pl_url)
+        #else:
+        #    get_song_updates(pl_url)
         sleep(1)

@@ -9,10 +9,20 @@ from pymongo import MongoClient
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+from config import *
 
 """
 MusicSync backend http api implementation
 """
+
+class BSONDumps(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+dumps = BSONDumps().encode
 
 class BaseResponse():
     """Base resource class"""
@@ -84,18 +94,41 @@ class SongsCollection(BaseResponse):
         songs = list(self.db["songs"].find({"playlist":playlist_id}))
         for song in songs:
             song["url"] = "http://s3.storage.ms.wut.ee/"+str(song["_id"])
-        if songs != None:
-            if extention == ".json":
-                resp.body = dumps(songs)
-            elif extention == ".m3u":
+        if songs != None and len(songs):
+            if extention == ".m3u":
                 resp.body = "\n".join([song["url"] for song in songs])
                 resp.content_type = "audio/mpegurl"
+            else:
+                resp.body = dumps(songs)
             resp.status = falcon.HTTP_200
         else:
             resp.status = falcon.HTTP_404
 
-    def on_post(self, req, resp, playlist_id, song_id):
+    def on_post(self, req, resp, playlist_id):
         """Add a song to a playlist"""
+        try:
+            playlist_id = ObjectId(playlist_id)
+        except InvalidId:
+            playlist_id = playlist_id
+        data = json.loads(req.stream.read().decode('utf-8'))
+        try:
+            info = youtube_dl.YoutubeDL({}).extract_info(data["_id"], download=False, process=False)
+            pl = {
+                "_id": info["id"],
+                "title": info["title"],
+                "type": "Youtube"
+            }
+        except Exception as ex:
+            pl = {
+                "title": data["title"],
+                "type": "Simple"
+            }
+        pl["playlist"] = str(playlist_id)
+        result = self.db["songs"].insert_one(pl)
+        pl["_id"] = str(result.inserted_id)
+        resp.status = falcon.HTTP_201
+        resp.body = json.dumps(pl, indent=2)
+        
         resp.status = falcon.HTTP_201
 
 
@@ -104,12 +137,23 @@ class SongResource(BaseResponse):
 
     def on_get(self, req, resp, playlist_id, song_id):
         """Return a one song"""
-        resp.status = falcon.HTTP_200
-        resp.body = json.dumps([{"_id":playlist_id,"song_id":song_id}])
+        try:
+            playlist_id = ObjectId(playlist_id)
+        except InvalidId:
+            playlist_id = playlist_id
+        songs = list(self.db["songs"].find({"playlist":playlist_id, "_id":song_id}))
+        for song in songs:
+            song["url"] = "http://s3.storage.ms.wut.ee/"+str(song["_id"])
+        if songs != None and len(songs):
+            resp.body = dumps(songs)
+            resp.status = falcon.HTTP_200
+        else:
+            resp.status = falcon.HTTP_404
 
     def on_delete(self, req, resp, playlist_id, song_id):
         """Delete that song from playlist"""
         resp.status = falcon.HTTP_204
+
 
 class ReadOnly():
     """Make everything readonly"""
@@ -126,7 +170,7 @@ class ReadOnly():
 client = MongoClient()
 db = client["MusicSync"]
 
-app = falcon.API(middleware=[ReadOnly(True)])
+app = falcon.API(middleware=[ReadOnly(READ_ONLY_API)])
 app.add_route('/playlists/', PlaylistsCollection(db))
 app.add_route('/playlists/{playlist_id}/', PlaylistResource(db))
 app.add_route('/playlists/{playlist_id}/songs/', SongsCollection(db))
