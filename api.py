@@ -179,7 +179,7 @@ app.add_route('/playlists/{playlist_id}/songs/{song_id}', SongResource(db))
 
 # a debug server
 if __name__ == '__main__':
-    httpd = simple_server.make_server('0.0.0.0', 8000, app)
+    httpd = simple_server.make_server('127.0.0.1', 8000, app)
     print("Running a dev server at http://{}:{}".format(*httpd.server_address))
     httpd.serve_forever()
 
