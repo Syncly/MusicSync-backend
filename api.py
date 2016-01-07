@@ -6,6 +6,7 @@ from wsgiref import simple_server
 import falcon
 import youtube_dl
 from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -155,6 +156,20 @@ class SongResource(BaseResponse):
         resp.status = falcon.HTTP_204
 
 
+class GCMResource(BaseResponse):
+    """Registration of Google Cloud Messaging clients"""
+
+    def on_post(self, req, resp):
+        token = req.stream.read().decode()
+        print("Registering device with token ..."+(token[-20:]))
+        try:
+            self.db["gcm"].insert_one({"_id": token})
+        except DuplicateKeyError as err:
+            resp.status = falcon.HTTP_409
+        else:
+            resp.status = falcon.HTTP_201
+
+
 class ReadOnly():
     """Make everything readonly"""
 
@@ -176,6 +191,7 @@ app.add_route('/playlists/{playlist_id}/', PlaylistResource(db))
 app.add_route('/playlists/{playlist_id}/songs/', SongsCollection(db))
 app.add_route('/playlists/{playlist_id}/songs{extention}', SongsCollection(db))
 app.add_route('/playlists/{playlist_id}/songs/{song_id}', SongResource(db))
+app.add_route('/gcm', GCMResource(db))
 
 # a debug server
 if __name__ == '__main__':

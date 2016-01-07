@@ -6,6 +6,9 @@ Downloads music from youtube
 from boto3.session import Session
 from concurrent.futures import ThreadPoolExecutor
 from sseclient import SSEClient
+from gcm import GCM
+from pymongo import MongoClient
+
 from pprint import pprint
 import json
 import io
@@ -20,6 +23,14 @@ session = Session(aws_access_key_id=S3_ACCESS_KEY,
                   region_name=S3_REGION)
 
 storage = session.resource("s3").Bucket(S3_BUCKET)
+
+gcm = GCM(GCM_API_KEY)
+
+client = MongoClient()
+db = client["MusicSync"]
+
+# TODO: refresh this!!!
+reg_ids = list( token["_id"] for token in db["gcm"].find())
 
 def fake_close():
     return
@@ -49,11 +60,13 @@ ydl_opts = {
 }
 
 def download_song(song_id):
+    format_id = None
     print("downloading song ", song_id)
     print(youtube_dl.downloader.http.sanitize_open)
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.download([song_id])
-        pprint(info)
+        info = ydl.extract_info(song_id)
+        format_id = info["format_id"]
+        print("format_id:", format_id)
     stream = file_objects.get(song_id)
     print(song_id)
     if not stream:
@@ -66,6 +79,15 @@ def download_song(song_id):
         try:
             storage.put_object(Key=song_id, ACL='public-read', Body=stream)
             print("[upload] Done")
+            data = dict(db["songs"].find_one({"_id":song_id}))
+            data["event"] = "SongUploaded"
+            data["url"] = "http://s3.storage.ms.wut.ee/"+song_id
+            data["playlist"] = str(data["playlist"])
+            data["format_id"] = format_id
+            pprint(data)
+            db["songs"].update({"_id":song_id}, {"$set": {"format_id": format_id}})
+            gcm.json_request(registration_ids=reg_ids, data=data)
+
         except Exception as err:
             import traceback
             traceback.print_exc()

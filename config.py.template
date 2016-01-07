@@ -3,3 +3,5 @@ S3_ACCESS_KEY = "YOUR KEY HERE"
 S3_SECRET_KEY = "YOUR KEY HERE"
 NGINX_EVENTS_PUB = "http://localhost/pub?id=event"
 NGINX_EVENTS_SUB = "http://localhost/sub/events"
+READ_ONLY_API = False
+GCM_API_KEY = "YOUR KEY HERE"

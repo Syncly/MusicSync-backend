@@ -98,7 +98,7 @@ def get_playlists():
 
 if __name__ == "__main__":
     from time import sleep
-    send_sse_event(0,"YoutubeSongAdded", {"title":"test", "_id":"FGBhQbmPwH8"})
+    send_sse_event(0,"YoutubeSongAdded", {"title":"Drake - Hotline Bling", "_id":"uxpDa-c-4Mc"})
     exit()
     print("Syncing Youtube")
     while True:
