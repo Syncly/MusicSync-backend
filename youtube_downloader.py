@@ -53,10 +53,11 @@ youtube_dl.downloader.http.sanitize_open = fake_sanitize_open
 import youtube_dl
 
 ydl_opts = {
-    "format":"172/171/141/140/bestaudio",
+    "format":"141/140/bestaudio",
     "outtmpl": "%(id)s",
     "nopart": True, # disable file rename
-    "verbose": True
+    "verbose": True,
+    "fixup": "warn"
 }
 
 def download_song(song_id):
