@@ -29,9 +29,6 @@ gcm = GCM(GCM_API_KEY)
 client = MongoClient()
 db = client["MusicSync"]
 
-# TODO: refresh this!!!
-reg_ids = list( token["_id"] for token in db["gcm"].find())
-
 def fake_close():
     return
 
@@ -87,6 +84,7 @@ def download_song(song_id):
             data["format_id"] = format_id
             pprint(data)
             db["songs"].update({"_id":song_id}, {"$set": {"format_id": format_id}})
+            reg_ids = list( token["_id"] for token in db["gcm"].find())
             gcm.json_request(registration_ids=reg_ids, data=data)
 
         except Exception as err:
