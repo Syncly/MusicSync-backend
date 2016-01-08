@@ -78,9 +78,17 @@ class PlaylistResource(BaseResponse):
 
     def on_delete(self, req, resp, playlist_id):
         """Delete this playlist"""
-        resp.status = falcon.HTTP_204
-
-
+        try:
+            _id = ObjectId(playlist_id)
+        except InvalidId:
+            _id = playlist_id
+        playlist = self.db["playlists"].find_one({"_id":_id})
+        if playlist != None:
+            self.db["songs"].remove({"playlist":_id})
+            self.db["playlists"].remove({"_id":_id})
+            resp.status = falcon.HTTP_200
+        else:
+            resp.status = falcon.HTTP_404
 
 
 class SongsCollection(BaseResponse):
